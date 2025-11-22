@@ -151,6 +151,124 @@ Then:
 - **Google Places API** - Location autocomplete and restaurant data
 - **AsyncStorage** - Local storage
 
+## Dependencies
+
+This project uses the following dependencies and modules:
+
+### Core Dependencies
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `react` | `19.1.0` | React library for building user interfaces |
+| `react-native` | `0.81.5` | Mobile app framework for iOS and Android |
+| `expo` | `~54.0.0` | Expo SDK for React Native development |
+
+### Navigation Dependencies
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `@react-navigation/native` | `^6.1.18` | Core navigation library for React Native |
+| `@react-navigation/stack` | `^6.4.1` | Stack navigator for screen transitions |
+| `@react-navigation/bottom-tabs` | `^6.6.1` | Bottom tab navigator for main navigation |
+| `react-native-screens` | `~4.16.0` | Native screen components for navigation |
+| `react-native-safe-area-context` | `~5.6.0` | Safe area handling for devices with notches |
+| `react-native-gesture-handler` | `~2.28.0` | Native gesture handling for navigation |
+
+### State Management Dependencies
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `@reduxjs/toolkit` | `^2.10.1` | Redux Toolkit for state management |
+| `react-redux` | `^9.2.0` | React bindings for Redux |
+
+### Firebase Dependencies
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `firebase` | `^11.1.0` | Firebase SDK for authentication, Firestore, and storage |
+
+### Location & Maps Dependencies
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `expo-location` | `~19.0.7` | Access device location services |
+| `react-native-google-places-autocomplete` | `^2.5.1` | Google Places Autocomplete component |
+| `react-native-maps` | `1.20.1` | Native maps component (if needed for future features) |
+
+### UI/UX Dependencies
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `@expo/vector-icons` | `^15.0.3` | Icon library (Ionicons, MaterialIcons, etc.) |
+| `react-native-vector-icons` | `^10.2.0` | Additional vector icons support |
+| `react-native-modal` | `^14.0.0-rc.1` | Animated modal components |
+| `expo-status-bar` | `~3.0.8` | Status bar component for Expo |
+
+### Storage & Persistence Dependencies
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `@react-native-async-storage/async-storage` | `2.2.0` | AsyncStorage for local data persistence |
+
+### API & HTTP Dependencies
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `axios` | `^1.7.9` | HTTP client for API requests |
+
+### Notifications Dependencies
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `expo-notifications` | `~0.32.13` | Push and local notifications |
+
+### Configuration Dependencies
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `react-native-dotenv` | `^3.4.11` | Environment variables loader for React Native |
+
+### Development Dependencies
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `@babel/core` | `^7.20.0` | Babel compiler core |
+| `babel-preset-expo` | `^54.0.7` | Babel preset for Expo projects |
+| `@types/react` | `~19.1.10` | TypeScript type definitions for React |
+| `typescript` | `^5.1.3` | TypeScript compiler (optional, for type checking) |
+
+### Installation
+
+To install all dependencies, run:
+
+```bash
+npm install
+```
+
+Or if you prefer yarn:
+
+```bash
+yarn install
+```
+
+### Peer Dependencies
+
+The following packages are peer dependencies (automatically installed with the above packages):
+
+- **React Navigation** requires `react-native-screens` and `react-native-safe-area-context`
+- **Expo** manages its own peer dependencies through the Expo SDK
+- **Firebase** requires React Native compatible versions
+- **React Native Maps** may require additional native configuration
+
+### Version Compatibility
+
+This project is built with:
+- **Expo SDK 54**
+- **React 19.1.0**
+- **React Native 0.81.5**
+
+Make sure your Node.js version is **v14 or higher** for compatibility.
+
 ## Notes
 
 - The app uses mock menu items in the restaurant detail screen. In a production app, you would fetch this data from an API or database.

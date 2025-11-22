@@ -21,7 +21,7 @@ Before you begin, ensure you have:
 - Expo CLI installed globally: `npm install -g expo-cli`
 - Google Places API key (with Places API and Places API (New) enabled)
 - Firebase project set up
-- (Optional) Yelp API key for real restaurant menu data - see [MENU_API_SETUP.md](./MENU_API_SETUP.md)
+- (Optional) Yelp API key for real restaurant menu data
 
 ## Setup Instructions
 

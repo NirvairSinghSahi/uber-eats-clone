@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "Uber Eats Clone",
+    "slug": "uber-eats-clone",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#000000",
+      "resizeMode": "contain"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ubereatsclone.app"
+    },
+    "android": {
+      "package": "com.ubereatsclone.app",
+      "config": {
+        "googleMaps": {
+          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+        }
+      }
+    },
+    "web": {},
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#000000",
+          "sounds": ["./assets/notification.wav"]
+        }
+      ]
+    ]
+  }
+}
+

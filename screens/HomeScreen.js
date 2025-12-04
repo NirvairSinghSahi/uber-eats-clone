@@ -1,13 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
-  Image,
-  TextInput,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
@@ -172,74 +168,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    padding: 16,
-    color: '#000',
-  },
-  restaurantsList: {
-    paddingHorizontal: 16,
-  },
-  restaurantCard: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    overflow: 'hidden',
-  },
-  restaurantImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 12,
-  },
-  restaurantInfo: {
-    flex: 1,
-    padding: 12,
-    justifyContent: 'space-between',
-  },
-  restaurantName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 4,
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  rating: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginLeft: 4,
-    color: '#000',
-  },
-  reviewCount: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 4,
-  },
-  categories: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
-  },
-  price: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
-  },
-  distance: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
   },
   welcomeContainer: {
     flex: 1,

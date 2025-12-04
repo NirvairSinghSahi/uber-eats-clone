@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
-  Animated,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -51,42 +50,12 @@ const RestaurantListScreen = () => {
     }
   };
 
-  const RestaurantCard = ({ item, index }) => {
-    const fadeAnim = useRef(new Animated.Value(0)).current;
-    const slideAnim = useRef(new Animated.Value(50)).current;
-
-    useEffect(() => {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
-          delay: index * 50,
-          useNativeDriver: true,
-        }),
-        Animated.spring(slideAnim, {
-          toValue: 0,
-          tension: 50,
-          friction: 7,
-          delay: index * 50,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }, []);
-
-    return (
-      <Animated.View
-        style={[
-          styles.restaurantCard,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }],
-          },
-        ]}
-      >
-        <TouchableOpacity
-          onPress={() => navigation.navigate('RestaurantDetail', { restaurant: item })}
-          activeOpacity={0.7}
-        >
+  const renderRestaurant = ({ item }) => (
+    <TouchableOpacity
+      style={styles.restaurantCard}
+      onPress={() => navigation.navigate('RestaurantDetail', { restaurant: item })}
+      activeOpacity={0.7}
+    >
       <Image
         source={{ uri: item.image_url || 'https://via.placeholder.com/300' }}
         style={styles.restaurantImage}
@@ -109,13 +78,7 @@ const RestaurantListScreen = () => {
           </Text>
         )}
       </View>
-        </TouchableOpacity>
-      </Animated.View>
-    );
-  };
-
-  const renderRestaurant = ({ item, index }) => (
-    <RestaurantCard item={item} index={index} />
+    </TouchableOpacity>
   );
 
   if (loading) {

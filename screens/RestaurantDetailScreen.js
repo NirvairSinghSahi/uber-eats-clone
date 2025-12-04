@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,13 +8,12 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  Animated,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { addToCart } from '../store/slices/cartSlice';
-import { getRestaurantDetails, getRestaurantReviews } from '../services/googlePlacesService';
+import { getRestaurantDetails } from '../services/googlePlacesService';
 import { getRestaurantMenu } from '../services/menuApiService';
 
 const RestaurantDetailScreen = () => {
@@ -23,14 +22,8 @@ const RestaurantDetailScreen = () => {
   const dispatch = useAppDispatch();
   const { restaurant: initialRestaurant } = route.params;
   const [restaurant, setRestaurant] = useState(initialRestaurant);
-  const [reviews, setReviews] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showItemModal, setShowItemModal] = useState(false);
-  const [selectedMenuItem, setSelectedMenuItem] = useState(null);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
-  
   const currentRestaurantId = useAppSelector((state) => state.cart.currentRestaurantId);
 
   useEffect(() => {
@@ -39,37 +32,18 @@ const RestaurantDetailScreen = () => {
 
   const loadRestaurantDetails = async () => {
     try {
-      // Use place_id if available, otherwise use id
       const placeId = initialRestaurant.place_id || initialRestaurant.id;
-      const [details, reviewsData] = await Promise.all([
-        getRestaurantDetails(placeId),
-        getRestaurantReviews(placeId),
+      const [details, menu] = await Promise.all([
+        getRestaurantDetails(placeId).catch(() => ({})),
+        getRestaurantMenu(initialRestaurant).catch(() => []),
       ]);
-      // Merge details with initial restaurant to preserve all data
-      const mergedRestaurant = { ...initialRestaurant, ...details };
-      setRestaurant(mergedRestaurant);
-      setReviews(reviewsData);
       
-      // Load menu - tries API first, then falls back to generated
-      try {
-        const menu = await getRestaurantMenu(mergedRestaurant);
-        setMenuItems(menu || []);
-      } catch (error) {
-        console.error('Error loading menu:', error);
-        setMenuItems([]);
-      }
+      setRestaurant({ ...initialRestaurant, ...details });
+      setMenuItems(menu || []);
     } catch (error) {
       console.error('Error loading restaurant details:', error);
-      // Fallback to initial restaurant data if API call fails
       setRestaurant(initialRestaurant);
-      // Still try to load menu from initial restaurant
-      try {
-        const menu = await getRestaurantMenu(initialRestaurant);
-        setMenuItems(menu || []);
-      } catch (menuError) {
-        console.error('Error loading menu from initial restaurant:', menuError);
-        setMenuItems([]);
-      }
+      setMenuItems([]);
     } finally {
       setLoading(false);
     }
@@ -127,54 +101,6 @@ const RestaurantDetailScreen = () => {
   };
 
 
-  // Menu Item Card Component with Animation (defined inside to access styles)
-  const MenuItemCard = ({ item, index, onAddToCart }) => {
-    const itemFadeAnim = useRef(new Animated.Value(0)).current;
-    const itemSlideAnim = useRef(new Animated.Value(20)).current;
-
-    useEffect(() => {
-      Animated.parallel([
-        Animated.timing(itemFadeAnim, {
-          toValue: 1,
-          duration: 300,
-          delay: index * 50,
-          useNativeDriver: true,
-        }),
-        Animated.spring(itemSlideAnim, {
-          toValue: 0,
-          tension: 50,
-          friction: 7,
-          delay: index * 50,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }, [itemFadeAnim, itemSlideAnim, index]);
-
-    return (
-      <Animated.View
-        style={[
-          styles.menuItem,
-          {
-            opacity: itemFadeAnim,
-            transform: [{ translateX: itemSlideAnim }],
-          },
-        ]}
-      >
-        <View style={styles.menuItemInfo}>
-          <Text style={styles.menuItemName}>{item.name}</Text>
-          <Text style={styles.menuItemDescription}>{item.description}</Text>
-          <Text style={styles.menuItemPrice}>${item.price.toFixed(2)}</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => onAddToCart(item)}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.addButtonText}>Add</Text>
-        </TouchableOpacity>
-      </Animated.View>
-    );
-  };
 
   // Menu items are loaded from menuService based on restaurant type
 
@@ -229,40 +155,25 @@ const RestaurantDetailScreen = () => {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Menu</Text>
               {menuItems && menuItems.length > 0 ? menuItems.map((item, index) => (
-                <MenuItemCard
-                  key={index}
-                  item={item}
-                  index={index}
-                  onAddToCart={handleAddToCart}
-                />
+                <View key={index} style={styles.menuItem}>
+                  <View style={styles.menuItemInfo}>
+                    <Text style={styles.menuItemName}>{item.name}</Text>
+                    <Text style={styles.menuItemDescription}>{item.description}</Text>
+                    <Text style={styles.menuItemPrice}>${item.price.toFixed(2)}</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.addButton}
+                    onPress={() => handleAddToCart(item)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.addButtonText}>Add</Text>
+                  </TouchableOpacity>
+                </View>
               )) : (
                 <Text style={styles.emptyMenuText}>No menu items available.</Text>
               )}
             </View>
 
-        {reviews.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Reviews</Text>
-            {reviews.slice(0, 3).map((review, index) => (
-              <View key={index} style={styles.review}>
-                <View style={styles.reviewHeader}>
-                  <Image
-                    source={{ uri: review.user.image_url || 'https://via.placeholder.com/40' }}
-                    style={styles.reviewAvatar}
-                  />
-                  <View style={styles.reviewUserInfo}>
-                    <Text style={styles.reviewUserName}>{review.user.name}</Text>
-                    <View style={styles.reviewRating}>
-                      <Ionicons name="star" size={14} color="#FFD700" />
-                      <Text style={styles.reviewRatingText}>{review.rating}</Text>
-                    </View>
-                  </View>
-                </View>
-                <Text style={styles.reviewText}>{review.text}</Text>
-              </View>
-            ))}
-          </View>
-        )}
       </View>
     </ScrollView>
   );
@@ -391,46 +302,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
   },
-  review: {
-    marginBottom: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  reviewHeader: {
-    flexDirection: 'row',
-    marginBottom: 8,
-  },
-  reviewAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
-  },
-  reviewUserInfo: {
-    flex: 1,
-  },
-  reviewUserName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 4,
-  },
-  reviewRating: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  reviewRatingText: {
-    fontSize: 14,
-    marginLeft: 4,
-    color: '#666',
-  },
-  reviewText: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
-  },
-  noMenuText: {
+  emptyMenuText: {
     fontSize: 14,
     color: '#999',
     fontStyle: 'italic',

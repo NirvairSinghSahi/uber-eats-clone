@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { login, clearError } from '../store/slices/authSlice';
+import { login, clearError, setGuestUser } from '../store/slices/authSlice';
 
 const LoginScreen = () => {
   const navigation = useNavigation();
@@ -71,6 +71,10 @@ const LoginScreen = () => {
     }
   };
 
+  const handleContinueAsGuest = () => {
+    dispatch(setGuestUser());
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.content}>
@@ -97,13 +101,6 @@ const LoginScreen = () => {
         />
 
         <TouchableOpacity
-          style={styles.forgotPasswordButton}
-          onPress={() => navigation.navigate('ForgotPassword')}
-        >
-          <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
           style={[styles.button, loading && styles.disabledButton]}
           onPress={handleLogin}
           disabled={loading}
@@ -122,6 +119,13 @@ const LoginScreen = () => {
           <Text style={styles.linkText}>
             Don't have an account? <Text style={styles.linkTextBold}>Sign Up</Text>
           </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.guestButton}
+          onPress={handleContinueAsGuest}
+        >
+          <Text style={styles.guestButtonText}>Continue as Guest</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -160,16 +164,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     backgroundColor: '#fff',
   },
-  forgotPasswordButton: {
-    alignSelf: 'flex-end',
-    marginTop: -8,
-    marginBottom: 16,
-  },
-  forgotPasswordText: {
-    fontSize: 14,
-    color: '#000',
-    fontWeight: '600',
-  },
   button: {
     backgroundColor: '#000',
     padding: 16,
@@ -196,6 +190,19 @@ const styles = StyleSheet.create({
   linkTextBold: {
     fontWeight: '600',
     color: '#000',
+  },
+  guestButton: {
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  guestButtonText: {
+    fontSize: 16,
+    color: '#000',
+    fontWeight: '600',
   },
 });
 

@@ -2,18 +2,12 @@ import { configureStore } from '@reduxjs/toolkit';
 import authReducer from './slices/authSlice';
 import cartReducer from './slices/cartSlice';
 import locationReducer from './slices/locationSlice';
-import favoritesReducer from './slices/favoritesSlice';
-import settingsReducer from './slices/settingsSlice';
-import savedAddressesReducer from './slices/savedAddressesSlice';
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
     cart: cartReducer,
     location: locationReducer,
-    favorites: favoritesReducer,
-    settings: settingsReducer,
-    savedAddresses: savedAddressesReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

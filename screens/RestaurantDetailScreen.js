@@ -14,7 +14,6 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { addToCart } from '../store/slices/cartSlice';
-import { toggleFavorite, selectIsFavorite } from '../store/slices/favoritesSlice';
 import { getRestaurantDetails, getRestaurantReviews } from '../services/googlePlacesService';
 import { getRestaurantMenu } from '../services/menuApiService';
 
@@ -32,19 +31,11 @@ const RestaurantDetailScreen = () => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   
-  // Get restaurant ID for favorite check (use current restaurant state)
-  const restaurantId = restaurant?.id || restaurant?.place_id || initialRestaurant?.id || initialRestaurant?.place_id;
-  const isFavorite = useAppSelector((state) => selectIsFavorite(state, restaurantId));
   const currentRestaurantId = useAppSelector((state) => state.cart.currentRestaurantId);
 
   useEffect(() => {
     loadRestaurantDetails();
   }, []);
-
-  // Update restaurant ID when restaurant state changes
-  useEffect(() => {
-    // This ensures isFavorite updates when restaurant state changes
-  }, [restaurant]);
 
   const loadRestaurantDetails = async () => {
     try {
@@ -135,11 +126,6 @@ const RestaurantDetailScreen = () => {
     Alert.alert('Added to Cart', `${item.name} has been added to your cart`);
   };
 
-  const handleToggleFavorite = () => {
-    // Use the current restaurant state, ensuring we have the right identifier
-    const restaurantToToggle = restaurant || initialRestaurant;
-    dispatch(toggleFavorite(restaurantToToggle));
-  };
 
   // Menu Item Card Component with Animation (defined inside to access styles)
   const MenuItemCard = ({ item, index, onAddToCart }) => {
@@ -207,16 +193,6 @@ const RestaurantDetailScreen = () => {
           source={{ uri: restaurant.image_url || 'https://via.placeholder.com/400' }}
           style={styles.headerImage}
         />
-        <TouchableOpacity
-          style={styles.favoriteButton}
-          onPress={handleToggleFavorite}
-        >
-          <Ionicons
-            name={isFavorite ? 'heart' : 'heart-outline'}
-            size={28}
-            color={isFavorite ? '#ff4444' : '#fff'}
-          />
-        </TouchableOpacity>
       </View>
       
       <View style={styles.content}>
@@ -311,17 +287,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 250,
     resizeMode: 'cover',
-  },
-  favoriteButton: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 25,
-    width: 50,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   content: {
     padding: 16,

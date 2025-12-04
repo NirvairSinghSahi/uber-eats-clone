@@ -1,67 +1,16 @@
-import React, { useRef, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image,
-  Animated,
 } from 'react-native';
-import AnimatedCard from '../components/AnimatedCard';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { removeFromCart, updateQuantity, selectCartItems, selectDeliveryAddress, selectCartTotal } from '../store/slices/cartSlice';
-
-// Cart Item Component with Animation (separate component to follow Rules of Hooks)
-const CartItemCard = ({ item, index, onRemove, onUpdateQuantity }) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 300,
-      delay: index * 100,
-      useNativeDriver: true,
-    }).start();
-  }, []);
-
-  return (
-    <AnimatedCard
-      style={[styles.cartItem, { opacity: fadeAnim }]}
-      onSwipeLeft={() => onRemove(item.id)}
-    >
-      <View style={styles.itemInfo}>
-        <Text style={styles.itemName}>{item.name}</Text>
-        <Text style={styles.itemRestaurant}>{item.restaurant}</Text>
-        <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
-      </View>
-      <View style={styles.quantityContainer}>
-        <TouchableOpacity
-          style={styles.quantityButton}
-          onPress={() => onUpdateQuantity(item.id, item.quantity - 1)}
-        >
-          <Ionicons name="remove" size={20} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.quantity}>{item.quantity}</Text>
-        <TouchableOpacity
-          style={styles.quantityButton}
-          onPress={() => onUpdateQuantity(item.id, item.quantity + 1)}
-        >
-          <Ionicons name="add" size={20} color="#000" />
-        </TouchableOpacity>
-      </View>
-      <TouchableOpacity
-        style={styles.removeButton}
-        onPress={() => onRemove(item.id)}
-      >
-        <Ionicons name="trash-outline" size={20} color="#ff4444" />
-      </TouchableOpacity>
-    </AnimatedCard>
-  );
-};
 
 const CartScreen = () => {
   const navigation = useNavigation();
@@ -131,14 +80,35 @@ const CartScreen = () => {
           )}
         </View>
 
-        {cartItems.map((item, index) => (
-          <CartItemCard
-            key={item.id}
-            item={item}
-            index={index}
-            onRemove={(itemId) => dispatch(removeFromCart(itemId))}
-            onUpdateQuantity={(itemId, quantity) => dispatch(updateQuantity({ itemId, quantity }))}
-          />
+        {cartItems.map((item) => (
+          <View key={item.id} style={styles.cartItem}>
+            <View style={styles.itemInfo}>
+              <Text style={styles.itemName}>{item.name}</Text>
+              <Text style={styles.itemRestaurant}>{item.restaurant}</Text>
+              <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
+            </View>
+            <View style={styles.quantityContainer}>
+              <TouchableOpacity
+                style={styles.quantityButton}
+                onPress={() => dispatch(updateQuantity({ itemId: item.id, quantity: item.quantity - 1 }))}
+              >
+                <Ionicons name="remove" size={20} color="#000" />
+              </TouchableOpacity>
+              <Text style={styles.quantity}>{item.quantity}</Text>
+              <TouchableOpacity
+                style={styles.quantityButton}
+                onPress={() => dispatch(updateQuantity({ itemId: item.id, quantity: item.quantity + 1 }))}
+              >
+                <Ionicons name="add" size={20} color="#000" />
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              style={styles.removeButton}
+              onPress={() => dispatch(removeFromCart(item.id))}
+            >
+              <Ionicons name="trash-outline" size={20} color="#ff4444" />
+            </TouchableOpacity>
+          </View>
         ))}
 
         <View style={styles.summary}>

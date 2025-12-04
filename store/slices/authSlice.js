@@ -2,7 +2,6 @@ import { createSlice } from '@reduxjs/toolkit';
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import { auth } from '../../firebase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { loadSavedAddresses, setAddresses } from './savedAddressesSlice';
 
 const initialState = {
   user: null,
@@ -33,10 +32,19 @@ const authSlice = createSlice({
       state.user = null;
       state.error = null;
     },
+    setGuestUser: (state) => {
+      state.user = {
+        uid: 'guest',
+        email: null,
+        isGuest: true,
+      };
+      state.loading = false;
+      state.error = null;
+    },
   },
 });
 
-export const { setUser, setLoading, setError, clearError, logout } = authSlice.actions;
+export const { setUser, setLoading, setError, clearError, logout, setGuestUser } = authSlice.actions;
 
 // Helper function to extract serializable user data
 const extractUserData = (user) => {
@@ -99,12 +107,8 @@ export const initializeAuth = () => async (dispatch) => {
       dispatch(setUser(userData));
       if (userData) {
         await AsyncStorage.setItem('user', JSON.stringify(userData));
-        // Load saved addresses for the user
-        dispatch(loadSavedAddresses(userData.uid));
       } else {
         await AsyncStorage.removeItem('user');
-        // Clear saved addresses when user logs out
-        dispatch(setAddresses([]));
       }
     });
     return unsubscribe;

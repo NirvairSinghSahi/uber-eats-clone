@@ -15,58 +15,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { setDeliveryAddress, selectDeliveryAddress } from '../store/slices/cartSlice';
-import { selectSavedAddresses, loadSavedAddresses } from '../store/slices/savedAddressesSlice';
-import { searchRestaurants, searchRestaurantsNearby } from '../services/googlePlacesService';
 import { GOOGLE_PLACES_CONFIG } from '../config/api';
 
 const HomeScreen = () => {
   const navigation = useNavigation();
   const dispatch = useAppDispatch();
   const deliveryAddress = useAppSelector(selectDeliveryAddress);
-  const savedAddresses = useAppSelector(selectSavedAddresses);
-  const [restaurants, setRestaurants] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [searchLocation, setSearchLocation] = useState('');
-  const [showSavedAddresses, setShowSavedAddresses] = useState(false);
 
-  const user = useAppSelector((state) => state.auth.user);
-
-  useEffect(() => {
-    // Load addresses for the current user
-    if (user?.uid) {
-      dispatch(loadSavedAddresses(user.uid));
-    } else {
-      // If no user, try to load from local storage
-      dispatch(loadSavedAddresses(null));
-    }
-  }, [dispatch, user?.uid]);
-
-  useEffect(() => {
-    if (deliveryAddress) {
-      loadRestaurants(deliveryAddress);
-    }
-  }, [deliveryAddress]);
-
-  const loadRestaurants = async (location) => {
-    setLoading(true);
-    try {
-      // If location has coordinates, use nearby search, otherwise use text search
-      if (location.location && location.location.lat && location.location.lng) {
-        const results = await searchRestaurantsNearby(
-          location.location.lat,
-          location.location.lng
-        );
-        setRestaurants(results);
-      } else {
-        const results = await searchRestaurants(location.description || location);
-        setRestaurants(results);
-      }
-    } catch (error) {
-      console.error('Error loading restaurants:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handlePlaceSelect = (data, details = null) => {
     if (details) {
@@ -77,53 +32,12 @@ const HomeScreen = () => {
           lng: details.geometry.location.lng,
         },
       };
-      // Only set as delivery address, don't save automatically
       dispatch(setDeliveryAddress(address));
-      setSearchLocation(data.description);
-      setShowSavedAddresses(false);
       // Navigate to restaurant list after selecting address
       navigation.navigate('RestaurantList');
     }
   };
 
-  const handleSelectSavedAddress = (address) => {
-    dispatch(setDeliveryAddress(address));
-    setShowSavedAddresses(false);
-    navigation.navigate('RestaurantList');
-  };
-
-  const renderRestaurantCard = (restaurant) => (
-    <TouchableOpacity
-      key={restaurant.id}
-      style={styles.restaurantCard}
-      onPress={() => navigation.navigate('RestaurantDetail', { restaurant })}
-    >
-      <Image
-        source={{ uri: restaurant.image_url || 'https://via.placeholder.com/300' }}
-        style={styles.restaurantImage}
-      />
-      <View style={styles.restaurantInfo}>
-        <Text style={styles.restaurantName} numberOfLines={1}>
-          {restaurant.name}
-        </Text>
-        <View style={styles.ratingContainer}>
-          <Ionicons name="star" size={14} color="#FFD700" />
-          <Text style={styles.rating}>{restaurant.rating}</Text>
-          <Text style={styles.reviewCount}>
-            ({restaurant.review_count} reviews)
-          </Text>
-        </View>
-        <Text style={styles.categories} numberOfLines={1}>
-          {restaurant.categories?.map((cat) => cat.title).join(', ')}
-        </Text>
-        {restaurant.distance && (
-          <Text style={styles.distance}>
-            {(restaurant.distance / 1609.34).toFixed(1)} mi away
-          </Text>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -132,61 +46,17 @@ const HomeScreen = () => {
           <Text style={styles.headerTitle}>Uber Eats</Text>
           <Text style={styles.headerSubtitle}>Discover restaurants near you</Text>
         </View>
-        <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-          <Ionicons name="person-circle-outline" size={32} color="#000" />
-        </TouchableOpacity>
       </View>
 
       <View style={styles.searchContainer}>
-        <View style={styles.searchHeader}>
-          <Text style={styles.searchLabel}>Delivery Address</Text>
-          {savedAddresses.length > 0 && (
-            <TouchableOpacity
-              onPress={() => setShowSavedAddresses(!showSavedAddresses)}
-              style={styles.savedAddressesButton}
-            >
-              <Ionicons 
-                name={showSavedAddresses ? "chevron-up" : "chevron-down"} 
-                size={20} 
-                color="#000" 
-              />
-              <Text style={styles.savedAddressesButtonText}>
-                {showSavedAddresses ? 'Hide' : 'Show'} Saved ({savedAddresses.length})
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {showSavedAddresses && savedAddresses.length > 0 && (
-          <View style={styles.savedAddressesList}>
-            {savedAddresses.map((address) => (
-              <TouchableOpacity
-                key={address.id}
-                style={styles.savedAddressItem}
-                onPress={() => handleSelectSavedAddress(address)}
-              >
-                <Ionicons name="location" size={20} color="#000" />
-                <Text style={styles.savedAddressText} numberOfLines={1}>
-                  {address.description}
-                </Text>
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity
-              style={styles.manageAddressesButton}
-              onPress={() => navigation.getParent()?.navigate('Profile', { screen: 'SavedAddresses' })}
-            >
-              <Text style={styles.manageAddressesText}>Manage Saved Addresses</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        <Text style={styles.searchLabel}>Search for a city or restaurant</Text>
 
         <GooglePlacesAutocomplete
-          placeholder="Enter delivery address"
+          placeholder="Enter city or restaurant name"
           onPress={handlePlaceSelect}
           query={{
             key: GOOGLE_PLACES_CONFIG.apiKey,
             language: 'en',
-            types: 'address', // Search for addresses worldwide
           }}
           fetchDetails={true}
           enablePoweredByContainer={false}
@@ -205,11 +75,6 @@ const HomeScreen = () => {
           }}
           GooglePlacesDetailsQuery={{
             fields: 'geometry,formatted_address,address_components',
-          }}
-          filterReverseGeocodingByTypes={['locality', 'administrative_area_level_3']}
-          nearbyPlacesAPI="GooglePlacesSearch"
-          GooglePlacesSearchQuery={{
-            rankby: 'distance',
           }}
         />
       </View>
@@ -426,61 +291,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  searchHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
   searchLabel: {
     fontSize: 14,
     fontWeight: '600',
     color: '#000',
-  },
-  savedAddressesButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-  },
-  savedAddressesButtonText: {
-    fontSize: 12,
-    color: '#000',
-    marginLeft: 4,
-    fontWeight: '600',
-  },
-  savedAddressesList: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    padding: 8,
-    marginBottom: 12,
-    maxHeight: 200,
-  },
-  savedAddressItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    backgroundColor: '#fff',
-    borderRadius: 8,
     marginBottom: 8,
-  },
-  savedAddressText: {
-    fontSize: 14,
-    color: '#000',
-    marginLeft: 12,
-    flex: 1,
-  },
-  manageAddressesButton: {
-    padding: 12,
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-    marginTop: 4,
-  },
-  manageAddressesText: {
-    fontSize: 12,
-    color: '#000',
-    fontWeight: '600',
   },
 });
 

@@ -20,16 +20,17 @@ if (!YELP_API_KEY || YELP_API_KEY === 'your-yelp-api-key') {
   );
 }
 
+
 export const GOOGLE_PLACES_CONFIG = {
   apiKey: GOOGLE_PLACES_API_KEY || 'your-google-places-api-key',
   language: 'en',
   // Removed country restriction to allow worldwide addresses
 };
 
-// Yelp API configuration (uses Spoonacular API backend)
+// Yelp API configuration 
 export const YELP_CONFIG = {
   apiKey: YELP_API_KEY || null,
-  baseUrl: 'https://api.spoonacular.com', // Spoonacular API endpoint
+  baseUrl: 'https://api.spoonacular.com', // Yelp API endpoint
 };
 
 

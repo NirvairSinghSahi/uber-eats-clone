@@ -4,13 +4,15 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { setDeliveryAddress, selectDeliveryAddress } from '../store/slices/cartSlice';
+import { setDeliveryAddress, selectDeliveryAddress, clearCart } from '../store/slices/cartSlice';
+import { logoutUser } from '../store/slices/authSlice';
 import { GOOGLE_PLACES_CONFIG } from '../config/api';
 
 const HomeScreen = () => {
@@ -34,6 +36,29 @@ const HomeScreen = () => {
     }
   };
 
+  const handleLogout = () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            // Clear cart when logging out
+            dispatch(clearCart());
+            // Logout user
+            await dispatch(logoutUser());
+          },
+        },
+      ]
+    );
+  };
+
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -42,6 +67,9 @@ const HomeScreen = () => {
           <Text style={styles.headerTitle}>Uber Eats</Text>
           <Text style={styles.headerSubtitle}>Discover restaurants near you</Text>
         </View>
+        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+          <Ionicons name="log-out-outline" size={24} color="#fff" />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.searchContainer}>
@@ -52,7 +80,7 @@ const HomeScreen = () => {
           onPress={handlePlaceSelect}
           query={{
             key: GOOGLE_PLACES_CONFIG.apiKey,
-            language: 'en',
+            language: GOOGLE_PLACES_CONFIG.language,
           }}
           fetchDetails={true}
           enablePoweredByContainer={false}
@@ -224,6 +252,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#000',
     marginBottom: 8,
+  },
+  logoutButton: {
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

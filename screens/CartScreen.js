@@ -5,12 +5,14 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { removeFromCart, updateQuantity, selectCartItems, selectDeliveryAddress, selectCartTotal } from '../store/slices/cartSlice';
+import { removeFromCart, updateQuantity, selectCartItems, selectDeliveryAddress, selectCartTotal, clearCart } from '../store/slices/cartSlice';
+import { logoutUser } from '../store/slices/authSlice';
 
 const CartScreen = () => {
   const navigation = useNavigation();
@@ -24,6 +26,29 @@ const CartScreen = () => {
       return;
     }
     navigation.navigate('Checkout');
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            // Clear cart when logging out
+            dispatch(clearCart());
+            // Logout user
+            await dispatch(logoutUser());
+          },
+        },
+      ]
+    );
   };
 
   if (cartItems.length === 0) {
@@ -66,9 +91,14 @@ const CartScreen = () => {
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView style={styles.content}>
         <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <Ionicons name="cart" size={28} color="#000" />
-            <Text style={styles.headerTitle}>Your Cart</Text>
+          <View style={styles.headerTop}>
+            <View style={styles.headerContent}>
+              <Ionicons name="cart" size={28} color="#000" />
+              <Text style={styles.headerTitle}>Your Cart</Text>
+            </View>
+            <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+              <Ionicons name="log-out-outline" size={24} color="#000" />
+            </TouchableOpacity>
           </View>
           {deliveryAddress && (
             <View style={styles.addressContainer}>
@@ -193,10 +223,20 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: '#e0e0e0',
   },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+  },
+  logoutButton: {
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: 26,

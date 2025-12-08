@@ -1,8 +1,7 @@
-import { initializeApp } from 'firebase/app';
-import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
-import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
+import { initializeApp } from 'firebase/app'; //Initializes the Firebase app with your config
+import { initializeAuth, getReactNativePersistence } from 'firebase/auth'; //(Stores user authentication state locally)
+import { getFirestore } from 'firebase/firestore'; //(Returns the database connection to read/write data)
+import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage'; //AsyncStorage for React Native
 import {
   FIREBASE_API_KEY,
   FIREBASE_AUTH_DOMAIN,
@@ -11,16 +10,6 @@ import {
   FIREBASE_MESSAGING_SENDER_ID,
   FIREBASE_APP_ID,
 } from '@env';
-
-// Debug: Log what we're getting from @env (values will be undefined if not loaded)
-console.log('🔍 Firebase Config Debug:', {
-  apiKey: FIREBASE_API_KEY ? `${FIREBASE_API_KEY.substring(0, 10)}...` : 'UNDEFINED',
-  authDomain: FIREBASE_AUTH_DOMAIN || 'UNDEFINED',
-  projectId: FIREBASE_PROJECT_ID || 'UNDEFINED',
-  storageBucket: FIREBASE_STORAGE_BUCKET || 'UNDEFINED',
-  messagingSenderId: FIREBASE_MESSAGING_SENDER_ID || 'UNDEFINED',
-  appId: FIREBASE_APP_ID ? `${FIREBASE_APP_ID.substring(0, 20)}...` : 'UNDEFINED',
-});
 
 // Your web app's Firebase configuration
 // Replace these values with your actual Firebase config from .env file
@@ -87,7 +76,6 @@ export const auth = initializeAuth(app, {
 
 // Initialize Firebase services
 export const db = getFirestore(app);
-export const storage = getStorage(app);
 
 export default app;
 

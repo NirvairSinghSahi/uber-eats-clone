@@ -1,10 +1,6 @@
 import { 
   GOOGLE_PLACES_API_KEY, 
-  YELP_API_KEY,
-  RESEND_API_KEY,
-  RESEND_FROM_EMAIL,
-  SENDGRID_API_KEY,
-  SENDGRID_FROM_EMAIL,
+  YELP_API_KEY
 } from '@env';
 
 // Validate Google Places API key
@@ -36,33 +32,9 @@ export const YELP_CONFIG = {
   baseUrl: 'https://api.spoonacular.com', // Spoonacular API endpoint
 };
 
-// Email API Configuration
-export const EMAIL_CONFIG = {
-  RESEND: {
-    apiKey: RESEND_API_KEY || null,
-    fromEmail: RESEND_FROM_EMAIL || 'onboarding@resend.dev',
-  },
-  SENDGRID: {
-    apiKey: SENDGRID_API_KEY || null,
-    fromEmail: SENDGRID_FROM_EMAIL || null,
-  },
-};
-
-// Validate email API keys
-if (!RESEND_API_KEY && !SENDGRID_API_KEY) {
-  console.warn(
-    '⚠️ No email API key configured.\n',
-    'To enable email notifications:\n',
-    '1. Sign up at https://resend.com (recommended) or https://sendgrid.com\n',
-    '2. Get your API key\n',
-    '3. Add RESEND_API_KEY or SENDGRID_API_KEY to your .env file\n',
-    '4. Add RESEND_FROM_EMAIL or SENDGRID_FROM_EMAIL to your .env file'
-  );
-}
 
 export default {
   GOOGLE_PLACES_CONFIG,
-  YELP_CONFIG,
-  EMAIL_CONFIG,
+  YELP_CONFIG
 };
 

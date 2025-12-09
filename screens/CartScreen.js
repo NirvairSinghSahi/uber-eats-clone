@@ -146,10 +146,12 @@ const CartScreen = () => {
             <Text style={styles.summaryLabel}>Subtotal</Text>
             <Text style={styles.summaryValue}>${cartTotal.toFixed(2)}</Text>
           </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Delivery Fee</Text>
-            <Text style={styles.summaryValue}>$2.99</Text>
-          </View>
+          {cartItems.length > 0 && (
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Delivery Fee</Text>
+              <Text style={styles.summaryValue}>$2.99</Text>
+            </View>
+          )}
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Tax</Text>
             <Text style={styles.summaryValue}>
@@ -159,7 +161,7 @@ const CartScreen = () => {
           <View style={[styles.summaryRow, styles.totalRow]}>
             <Text style={styles.totalLabel}>Total</Text>
             <Text style={styles.totalValue}>
-              ${(cartTotal + 2.99 + cartTotal * 0.1).toFixed(2)}
+              ${(cartTotal + (cartItems.length > 0 ? 2.99 : 0) + cartTotal * 0.1).toFixed(2)}
             </Text>
           </View>
         </View>
@@ -172,6 +174,13 @@ const CartScreen = () => {
           disabled={cartItems.length === 0}
         >
           <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.orderHistoryButton}
+          onPress={() => navigation.navigate('OrderDetails')}
+        >
+          <Ionicons name="receipt-outline" size={20} color="#000" />
+          <Text style={styles.orderHistoryButtonText}>View Order History</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -375,6 +384,19 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  orderHistoryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    marginTop: 8,
+  },
+  orderHistoryButtonText: {
+    color: '#000',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });
 

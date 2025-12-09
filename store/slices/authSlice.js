@@ -1,5 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile as firebaseUpdateProfile, updateEmail as firebaseUpdateEmail, updatePassword as firebaseUpdatePassword } from 'firebase/auth';
 import { auth } from '../../firebase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -161,6 +161,64 @@ export const logoutUser = () => async (dispatch) => {
   } catch (error) {
     dispatch(setError(error.message));
     return { success: false, error: error.message };
+  }
+};
+
+export const updateProfile = (profileData) => async (dispatch) => {
+  try {
+    if (!auth.currentUser) {
+      throw new Error('No user is currently signed in');
+    }
+
+    await firebaseUpdateProfile(auth.currentUser, profileData);
+    
+    // Update local state
+    const updatedUser = {
+      ...extractUserData(auth.currentUser),
+      ...profileData,
+    };
+    dispatch(setUser(updatedUser));
+    await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+    
+    return { success: true };
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const updateEmail = (newEmail) => async (dispatch) => {
+  try {
+    if (!auth.currentUser) {
+      throw new Error('No user is currently signed in');
+    }
+
+    await firebaseUpdateEmail(auth.currentUser, newEmail);
+    
+    // Update local state
+    const updatedUser = {
+      ...extractUserData(auth.currentUser),
+      email: newEmail,
+    };
+    dispatch(setUser(updatedUser));
+    await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+    
+    return { success: true };
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const updatePassword = (newPassword) => async (dispatch) => {
+  try {
+    if (!auth.currentUser) {
+      throw new Error('No user is currently signed in');
+    }
+
+    await firebaseUpdatePassword(auth.currentUser, newPassword);
+    
+    return { success: true };
+  } catch (error) {
+    throw error;
   }
 };
 

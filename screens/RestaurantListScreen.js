@@ -8,21 +8,67 @@ import {
   Image,
   ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppSelector } from '../store/hooks';
 import { selectDeliveryAddress } from '../store/slices/cartSlice';
 import { searchRestaurants, searchRestaurantsNearby } from '../services/googlePlacesService';
 
+// Helper function to normalize category names for matching
+const normalizeCategoryForMatching = (categoryName) => {
+  const name = categoryName.toLowerCase().trim();
+  const mappings = {
+    'pizza': 'pizza',
+    'pizzeria': 'pizza',
+    'italian': 'italian',
+    'burger': 'burgers',
+    'burgers': 'burgers',
+    'hamburger': 'burgers',
+    'fast food': 'burgers',
+    'fast_food': 'burgers',
+    'american': 'burgers',
+    'sushi': 'sushi',
+    'japanese': 'sushi',
+    'mexican': 'mexican',
+    'taco': 'mexican',
+    'burrito': 'mexican',
+    'chinese': 'chinese',
+    'indian': 'indian',
+    'thai': 'thai',
+    'seafood': 'seafood',
+    'fish': 'seafood',
+    'dessert': 'desserts',
+    'desserts': 'desserts',
+    'bakery': 'desserts',
+    'ice cream': 'desserts',
+    'cafe': 'cafe',
+    'coffee': 'cafe',
+  };
+  
+  if (mappings[name]) {
+    return mappings[name];
+  }
+  
+  for (const [key, value] of Object.entries(mappings)) {
+    if (name.includes(key)) {
+      return value;
+    }
+  }
+  
+  return name;
+};
+
 const RestaurantListScreen = () => {
   const navigation = useNavigation();
+  const route = useRoute();
   const deliveryAddress = useAppSelector(selectDeliveryAddress);
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(true);
+  const category = route.params?.category;
 
   useEffect(() => {
     loadRestaurants();
-  }, [deliveryAddress]);
+  }, [deliveryAddress, category]);
 
   const loadRestaurants = async () => {
     if (!deliveryAddress) {
@@ -32,17 +78,67 @@ const RestaurantListScreen = () => {
 
     setLoading(true);
     try {
+      let results = [];
+      
       // If location has coordinates, use nearby search, otherwise use text search
       if (deliveryAddress.location && deliveryAddress.location.lat && deliveryAddress.location.lng) {
-        const results = await searchRestaurantsNearby(
+        results = await searchRestaurantsNearby(
           deliveryAddress.location.lat,
           deliveryAddress.location.lng
         );
-        setRestaurants(results);
       } else {
-        const results = await searchRestaurants(deliveryAddress.description || 'New York');
-        setRestaurants(results);
+        results = await searchRestaurants(deliveryAddress.description || 'New York');
       }
+
+      // Filter by category if provided
+      if (category) {
+        const categoryLower = category.toLowerCase();
+        results = results.filter((restaurant) => {
+          // Check restaurant name
+          const name = (restaurant.name || '').toLowerCase();
+          if (name.includes(categoryLower)) return true;
+
+          // Check categories
+          const categories = restaurant.categories || [];
+          const categoryMatches = categories.some((cat) => {
+            const catTitle = (cat.title || '').toLowerCase();
+            const catAlias = (cat.alias || '').toLowerCase();
+            // Normalize category names for matching (similar to categoryService)
+            const normalizedCat = normalizeCategoryForMatching(catTitle || catAlias);
+            const normalizedSearch = normalizeCategoryForMatching(categoryLower);
+            return normalizedCat === normalizedSearch || 
+                   catTitle.includes(categoryLower) || 
+                   catAlias.includes(categoryLower);
+          });
+          if (categoryMatches) return true;
+
+          // Special mappings for better matching
+          const categoryMappings = {
+            'pizza': ['pizza', 'pizzeria', 'italian'],
+            'burgers': ['burger', 'fast food', 'fast_food', 'american'],
+            'sushi': ['sushi', 'japanese'],
+            'italian': ['italian', 'pizza', 'pasta'],
+            'mexican': ['mexican', 'taco', 'burrito'],
+            'chinese': ['chinese', 'asian'],
+            'indian': ['indian', 'curry'],
+            'thai': ['thai'],
+            'seafood': ['seafood', 'fish'],
+            'desserts': ['dessert', 'bakery', 'ice cream', 'cafe'],
+          };
+
+          const searchTerms = categoryMappings[categoryLower] || [categoryLower];
+          return searchTerms.some((term) => {
+            if (name.includes(term)) return true;
+            return categories.some((cat) => {
+              const catTitle = (cat.title || '').toLowerCase();
+              const catAlias = (cat.alias || '').toLowerCase();
+              return catTitle.includes(term) || catAlias.includes(term);
+            });
+          });
+        });
+      }
+
+      setRestaurants(results);
     } catch (error) {
       console.error('Error loading restaurants:', error);
     } finally {
@@ -91,6 +187,13 @@ const RestaurantListScreen = () => {
 
   return (
     <View style={styles.container}>
+      {category && (
+        <View style={styles.categoryHeader}>
+          <Text style={styles.categoryHeaderText}>
+            {category} Restaurants
+          </Text>
+        </View>
+      )}
       <FlatList
         data={restaurants}
         renderItem={renderRestaurant}
@@ -98,7 +201,9 @@ const RestaurantListScreen = () => {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>No restaurants found</Text>
+            <Text style={styles.emptyStateText}>
+              {category ? `No ${category.toLowerCase()} restaurants found` : 'No restaurants found'}
+            </Text>
           </View>
         }
       />
@@ -185,6 +290,17 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 16,
     color: '#666',
+  },
+  categoryHeader: {
+    padding: 16,
+    backgroundColor: '#f8f8f8',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  categoryHeaderText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#000',
   },
 });
 

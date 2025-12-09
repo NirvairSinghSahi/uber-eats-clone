@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -27,18 +28,28 @@ const CheckoutScreen = () => {
   const [loading, setLoading] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderData, setOrderData] = useState(null);
+  const [orderType, setOrderType] = useState('delivery'); // 'delivery' or 'pickup'
+  const [tipType, setTipType] = useState('percentage'); // 'percentage' or 'custom'
+  const [tipPercentage, setTipPercentage] = useState(15); // 10, 15, 20, or custom
+  const [customTip, setCustomTip] = useState('');
 
   const subtotal = cartTotal;
-  const deliveryFee = 2.99;
+  const deliveryFee = (orderType === 'delivery' && cartItems.length > 0) ? 2.99 : 0;
   const tax = subtotal * 0.1;
-  const total = subtotal + deliveryFee + tax;
+  
+  // Calculate tip
+  const tipAmount = tipType === 'percentage' 
+    ? subtotal * (tipPercentage / 100)
+    : parseFloat(customTip) || 0;
+  
+  const total = subtotal + deliveryFee + tax + tipAmount;
 
   const handlePlaceOrder = async () => {
     if (loading || orderPlaced) {
       return;
     }
 
-    if (!deliveryAddress) {
+    if (orderType === 'delivery' && !deliveryAddress) {
       Alert.alert('Error', 'Please select a delivery address');
       return;
     }
@@ -80,16 +91,34 @@ const CheckoutScreen = () => {
         return;
       }
 
+      // Get restaurant coordinates from first cart item
+      const restaurantCoordinates = cartItems[0]?.restaurantCoordinates || null;
+      // Get delivery/pickup address coordinates
+      const addressCoordinates = deliveryAddress?.location || null;
+
       const order = {
         userId: user.uid,
         items: cartItems,
-        deliveryAddress: deliveryAddress.description,
+        orderType: orderType, // 'delivery' or 'pickup'
+        deliveryAddress: orderType === 'delivery' ? deliveryAddress.description : null,
+        pickupAddress: orderType === 'pickup' ? (cartItems[0]?.restaurant || 'Restaurant') : null,
+        restaurantName: cartItems[0]?.restaurant || 'Restaurant',
+        restaurantCoordinates: restaurantCoordinates,
+        deliveryCoordinates: orderType === 'delivery' ? addressCoordinates : null,
         paymentMethod: 'cash',
         subtotal,
         deliveryFee,
         tax,
+        tip: tipAmount,
         total,
-        status: 'pending',
+        status: 'placed', // Initial status
+        statusHistory: [
+          {
+            status: 'placed',
+            timestamp: new Date().toISOString(),
+            message: 'Order placed successfully',
+          },
+        ],
         createdAt: new Date().toISOString(),
         timestamp: Date.now(),
       };
@@ -106,7 +135,8 @@ const CheckoutScreen = () => {
       // Clear cart after successful order
       dispatch(clearCart());
       
-      Alert.alert('Success', 'Your order has been placed successfully!');
+      // Navigate to tracking screen
+      navigation.navigate('OrderTracking', { orderId: docRef.id });
     } catch (error) {
       console.error('Error placing order:', error);
       
@@ -153,14 +183,23 @@ const CheckoutScreen = () => {
                 <Text style={styles.detailValue}>{orderData.id}</Text>
               </View>
 
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Delivery Address:</Text>
-                <Text style={styles.detailValue}>{orderData.deliveryAddress}</Text>
-              </View>
+              {orderData.orderType === 'delivery' ? (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Delivery Address:</Text>
+                  <Text style={styles.detailValue}>{orderData.deliveryAddress || 'N/A'}</Text>
+                </View>
+              ) : (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Pickup Location:</Text>
+                  <Text style={styles.detailValue}>{orderData.pickupAddress || orderData.restaurantName || 'N/A'}</Text>
+                </View>
+              )}
 
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Payment Method:</Text>
-                <Text style={styles.detailValue}>Cash on Delivery</Text>
+                <Text style={styles.detailValue}>
+                  {orderData.orderType === 'pickup' ? 'Cash on Pickup' : 'Cash on Delivery'}
+                </Text>
               </View>
 
               <View style={styles.itemsSection}>
@@ -168,7 +207,7 @@ const CheckoutScreen = () => {
                 {orderData.items.map((item) => (
                   <View key={item.id} style={styles.itemRow}>
                     <Text style={styles.itemName}>
-                      {item.name} x{item.quantity}
+                      {item.name} x{String(item.quantity || 1)}
                     </Text>
                     <Text style={styles.itemPrice}>
                       ${(item.price * item.quantity).toFixed(2)}
@@ -190,6 +229,12 @@ const CheckoutScreen = () => {
                   <Text style={styles.summaryLabel}>Tax:</Text>
                   <Text style={styles.summaryValue}>${orderData.tax.toFixed(2)}</Text>
                 </View>
+                {orderData.tip && orderData.tip > 0 && (
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Tip:</Text>
+                    <Text style={styles.summaryValue}>${(orderData.tip || 0).toFixed(2)}</Text>
+                  </View>
+                )}
                 <View style={[styles.summaryRow, styles.totalRow]}>
                   <Text style={styles.totalLabel}>Total:</Text>
                   <Text style={styles.totalValue}>${orderData.total.toFixed(2)}</Text>
@@ -197,15 +242,27 @@ const CheckoutScreen = () => {
               </View>
             </View>
 
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => {
-                setOrderData(null);
-                navigation.navigate('Home');
-              }}
-            >
-              <Text style={styles.backButtonText}>Back to Home</Text>
-            </TouchableOpacity>
+            <View style={styles.confirmationActions}>
+              <TouchableOpacity
+                style={[styles.backButton, styles.viewOrderButton]}
+                onPress={() => {
+                  const orderId = orderData.id;
+                  setOrderData(null);
+                  navigation.navigate('OrderTracking', { orderId });
+                }}
+              >
+                <Text style={styles.backButtonText}>Track Your Order</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => {
+                  setOrderData(null);
+                  navigation.getParent()?.navigate('Home');
+                }}
+              >
+                <Text style={styles.backButtonText}>Back to Home</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -217,28 +274,90 @@ const CheckoutScreen = () => {
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView style={styles.content}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Delivery Address</Text>
-          {deliveryAddress ? (
-            <View style={styles.addressCard}>
-              <Ionicons name="location-outline" size={20} color="#000" />
-              <Text style={styles.addressText}>{deliveryAddress.description}</Text>
-            </View>
-          ) : (
+          <Text style={styles.sectionTitle}>Order Type</Text>
+          <View style={styles.orderTypeContainer}>
             <TouchableOpacity
-              style={styles.addAddressButton}
-              onPress={() => navigation.navigate('Home')}
+              style={[
+                styles.orderTypeOption,
+                orderType === 'delivery' && styles.orderTypeOptionActive,
+              ]}
+              onPress={() => setOrderType('delivery')}
             >
-              <Text style={styles.addAddressText}>Add Delivery Address</Text>
+              <Ionicons
+                name="car-outline"
+                size={24}
+                color={orderType === 'delivery' ? '#fff' : '#000'}
+              />
+              <Text
+                style={[
+                  styles.orderTypeText,
+                  orderType === 'delivery' && styles.orderTypeTextActive,
+                ]}
+              >
+                Delivery
+              </Text>
             </TouchableOpacity>
-          )}
+            <TouchableOpacity
+              style={[
+                styles.orderTypeOption,
+                orderType === 'pickup' && styles.orderTypeOptionActive,
+              ]}
+              onPress={() => setOrderType('pickup')}
+            >
+              <Ionicons
+                name="storefront-outline"
+                size={24}
+                color={orderType === 'pickup' ? '#fff' : '#000'}
+              />
+              <Text
+                style={[
+                  styles.orderTypeText,
+                  orderType === 'pickup' && styles.orderTypeTextActive,
+                ]}
+              >
+                Pickup
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
+
+        {orderType === 'delivery' && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Delivery Address</Text>
+            {deliveryAddress ? (
+              <View style={styles.addressCard}>
+                <Ionicons name="location-outline" size={20} color="#000" />
+                <Text style={styles.addressText}>{deliveryAddress.description}</Text>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.addAddressButton}
+                onPress={() => navigation.navigate('Home')}
+              >
+                <Text style={styles.addAddressText}>Add Delivery Address</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        {orderType === 'pickup' && cartItems.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Pickup Location</Text>
+            <View style={styles.addressCard}>
+              <Ionicons name="storefront-outline" size={20} color="#000" />
+              <Text style={styles.addressText}>
+                {cartItems[0]?.restaurant || 'Restaurant'}
+              </Text>
+            </View>
+          </View>
+        )}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Order Summary</Text>
           {cartItems.map((item) => (
             <View key={item.id} style={styles.orderItem}>
               <Text style={styles.orderItemName}>
-                {item.name} x{item.quantity}
+                {item.name} x{String(item.quantity || 1)}
               </Text>
               <Text style={styles.orderItemPrice}>
                 ${(item.price * item.quantity).toFixed(2)}
@@ -249,13 +368,19 @@ const CheckoutScreen = () => {
             <Text style={styles.summaryLabel}>Subtotal</Text>
             <Text style={styles.summaryValue}>${subtotal.toFixed(2)}</Text>
           </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Delivery Fee</Text>
-            <Text style={styles.summaryValue}>${deliveryFee.toFixed(2)}</Text>
-          </View>
+          {orderType === 'delivery' && (
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Delivery Fee</Text>
+              <Text style={styles.summaryValue}>${deliveryFee.toFixed(2)}</Text>
+            </View>
+          )}
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Tax</Text>
             <Text style={styles.summaryValue}>${tax.toFixed(2)}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Tip</Text>
+            <Text style={styles.summaryValue}>${tipAmount.toFixed(2)}</Text>
           </View>
           <View style={[styles.summaryRow, styles.totalRow]}>
             <Text style={styles.totalLabel}>Total</Text>
@@ -264,13 +389,91 @@ const CheckoutScreen = () => {
         </View>
 
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Tip</Text>
+          <View style={styles.tipTypeContainer}>
+            <TouchableOpacity
+              style={[
+                styles.tipTypeOption,
+                tipType === 'percentage' && styles.tipTypeOptionActive,
+              ]}
+              onPress={() => setTipType('percentage')}
+            >
+              <Text
+                style={[
+                  styles.tipTypeText,
+                  tipType === 'percentage' && styles.tipTypeTextActive,
+                ]}
+              >
+                Percentage
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.tipTypeOption,
+                tipType === 'custom' && styles.tipTypeOptionActive,
+              ]}
+              onPress={() => setTipType('custom')}
+            >
+              <Text
+                style={[
+                  styles.tipTypeText,
+                  tipType === 'custom' && styles.tipTypeTextActive,
+                ]}
+              >
+                Custom
+              </Text>
+            </TouchableOpacity>
+          </View>
+          
+          {tipType === 'percentage' ? (
+            <View style={styles.tipPercentageContainer}>
+              {[10, 15, 20, 25].map((percent) => (
+                <TouchableOpacity
+                  key={percent}
+                  style={[
+                    styles.tipPercentageButton,
+                    tipPercentage === percent && styles.tipPercentageButtonActive,
+                  ]}
+                  onPress={() => setTipPercentage(percent)}
+                >
+                  <Text
+                    style={[
+                      styles.tipPercentageText,
+                      tipPercentage === percent && styles.tipPercentageTextActive,
+                    ]}
+                  >
+                    {percent}%
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.customTipContainer}>
+              <Text style={styles.customTipLabel}>Custom Tip Amount ($)</Text>
+              <TextInput
+                style={styles.customTipInput}
+                value={customTip}
+                onChangeText={setCustomTip}
+                placeholder="0.00"
+                keyboardType="decimal-pad"
+                placeholderTextColor="#999"
+              />
+            </View>
+          )}
+        </View>
+
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Payment Method</Text>
           <View style={styles.paymentOption}>
             <Ionicons name="cash-outline" size={24} color="#000" />
-            <Text style={styles.paymentOptionText}>Cash on Delivery</Text>
+            <Text style={styles.paymentOptionText}>
+              {orderType === 'pickup' ? 'Cash on Pickup' : 'Cash on Delivery'}
+            </Text>
           </View>
           <Text style={styles.paymentNote}>
-            Pay with cash when your order arrives
+            {orderType === 'pickup' 
+              ? 'Pay with cash when you pick up your order'
+              : 'Pay with cash when your order arrives'}
           </Text>
         </View>
 
@@ -396,6 +599,102 @@ const styles = StyleSheet.create({
     marginLeft: 36,
     fontStyle: 'italic',
   },
+  orderTypeContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  orderTypeOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
+    backgroundColor: '#fff',
+  },
+  orderTypeOptionActive: {
+    backgroundColor: '#000',
+    borderColor: '#000',
+  },
+  orderTypeText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginLeft: 8,
+  },
+  orderTypeTextActive: {
+    color: '#fff',
+  },
+  tipTypeContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+  },
+  tipTypeOption: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+  },
+  tipTypeOptionActive: {
+    backgroundColor: '#000',
+    borderColor: '#000',
+  },
+  tipTypeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+  },
+  tipTypeTextActive: {
+    color: '#fff',
+  },
+  tipPercentageContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+  },
+  tipPercentageButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
+    backgroundColor: '#fff',
+    alignItems: 'center',
+  },
+  tipPercentageButtonActive: {
+    backgroundColor: '#000',
+    borderColor: '#000',
+  },
+  tipPercentageText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+  },
+  tipPercentageTextActive: {
+    color: '#fff',
+  },
+  customTipContainer: {
+    marginTop: 12,
+  },
+  customTipLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+  },
+  customTipInput: {
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    color: '#000',
+  },
   placeOrderButton: {
     backgroundColor: '#000',
     padding: 16,
@@ -495,13 +794,20 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
   },
+  confirmationActions: {
+    width: '100%',
+    gap: 12,
+  },
   backButton: {
     backgroundColor: '#000',
     padding: 16,
     borderRadius: 8,
     width: '100%',
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 0,
+  },
+  viewOrderButton: {
+    backgroundColor: '#4CAF50',
   },
   backButtonText: {
     color: '#fff',

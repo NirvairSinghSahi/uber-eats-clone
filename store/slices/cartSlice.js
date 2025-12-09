@@ -49,10 +49,13 @@ const cartSlice = createSlice({
     setDeliveryAddress: (state, action) => {
       state.deliveryAddress = action.payload;
     },
+    clearDeliveryAddress: (state) => {
+      state.deliveryAddress = null;
+    },
   },
 });
 
-export const { addToCart, removeFromCart, updateQuantity, clearCart, setDeliveryAddress } = cartSlice.actions;
+export const { addToCart, removeFromCart, updateQuantity, clearCart, setDeliveryAddress, clearDeliveryAddress } = cartSlice.actions;
 
 // Selectors
 export const selectCartItems = (state) => state.cart.items;

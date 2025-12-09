@@ -73,6 +73,10 @@ const RestaurantDetailScreen = () => {
                 price: item.price || 10,
                 restaurant: restaurant.name,
                 restaurantId: restaurantId,
+                restaurantCoordinates: restaurant.coordinates ? {
+                  lat: restaurant.coordinates.latitude,
+                  lng: restaurant.coordinates.longitude,
+                } : null,
               };
               dispatch(addToCart(cartItem));
               Alert.alert('Added to Cart', `${item.name} has been added to your cart`);

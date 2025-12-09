@@ -15,6 +15,10 @@ import CartScreen from '../screens/CartScreen';
 import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
 import CheckoutScreen from '../screens/CheckoutScreen';
+import OrderDetailsScreen from '../screens/OrderDetailsScreen';
+import OrderTrackingScreen from '../screens/OrderTrackingScreen';
+import SavedAddressesScreen from '../screens/SavedAddressesScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -42,6 +46,26 @@ const HomeStack = () => {
         component={CheckoutScreen}
         options={{ title: 'Checkout' }}
       />
+      <Stack.Screen 
+        name="OrderDetails" 
+        component={OrderDetailsScreen}
+        options={{ title: 'Order Details' }}
+      />
+      <Stack.Screen 
+        name="OrderTracking" 
+        component={OrderTrackingScreen}
+        options={{ title: 'Track Order' }}
+      />
+      <Stack.Screen 
+        name="SavedAddresses" 
+        component={SavedAddressesScreen}
+        options={{ title: 'Saved Addresses' }}
+      />
+      <Stack.Screen 
+        name="Profile" 
+        component={ProfileScreen}
+        options={{ title: 'Profile' }}
+      />
     </Stack.Navigator>
   );
 };
@@ -58,6 +82,26 @@ const CartStack = () => {
         name="Checkout" 
         component={CheckoutScreen}
         options={{ title: 'Checkout' }}
+      />
+      <Stack.Screen 
+        name="OrderDetails" 
+        component={OrderDetailsScreen}
+        options={{ title: 'Order Details' }}
+      />
+      <Stack.Screen 
+        name="OrderTracking" 
+        component={OrderTrackingScreen}
+        options={{ title: 'Track Order' }}
+      />
+      <Stack.Screen 
+        name="SavedAddresses" 
+        component={SavedAddressesScreen}
+        options={{ title: 'Saved Addresses' }}
+      />
+      <Stack.Screen 
+        name="Profile" 
+        component={ProfileScreen}
+        options={{ title: 'Profile' }}
       />
     </Stack.Navigator>
   );
@@ -76,6 +120,8 @@ const MainTabs = () => {
             iconName = focused ? 'home' : 'home-outline';
           } else if (route.name === 'Cart') {
             iconName = focused ? 'cart' : 'cart-outline';
+          } else if (route.name === 'Orders') {
+            iconName = focused ? 'receipt' : 'receipt-outline';
           }
 
           return <Ionicons name={iconName} size={size} color={color} />;
@@ -92,6 +138,21 @@ const MainTabs = () => {
         options={{ 
           tabBarBadge: cartItemCount > 0 ? cartItemCount : null,
           tabBarBadgeStyle: { backgroundColor: '#000' }
+        }}
+      />
+      <Tab.Screen 
+        name="Orders" 
+        component={OrderDetailsScreen}
+        options={{ title: 'Orders' }}
+      />
+      <Tab.Screen 
+        name="TrackOrder" 
+        component={OrderTrackingScreen}
+        options={{ 
+          title: 'Track Order',
+          tabBarIcon: ({ focused, color, size }) => (
+            <Ionicons name={focused ? 'location' : 'location-outline'} size={size} color={color} />
+          ),
         }}
       />
     </Tab.Navigator>

@@ -12,7 +12,6 @@ if (!GOOGLE_PLACES_API_KEY || GOOGLE_PLACES_API_KEY === 'your-google-places-api-
 }
 
 // Validate Yelp API key (optional - will fallback to generated menus)
-// Note: This uses Spoonacular API backend but is configured as YELP_API_KEY
 if (!YELP_API_KEY || YELP_API_KEY === 'your-yelp-api-key') {
   console.warn(
     '⚠️ Yelp API key is missing. Menu service will use generated menus.\n',

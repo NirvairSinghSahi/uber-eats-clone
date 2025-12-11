@@ -276,11 +276,65 @@ const HomeScreen = () => {
         </View>
       </View>
 
+      <View style={styles.searchContainer}>
+        <Text style={styles.searchLabel}>
+          {deliveryAddress ? 'Change address or search' : 'Search for a city or restaurant'}
+        </Text>
+
+        <GooglePlacesAutocomplete
+          placeholder="Enter city or restaurant name"
+          onPress={handlePlaceSelect}
+          query={{
+            key: GOOGLE_PLACES_CONFIG.apiKey,
+            language: GOOGLE_PLACES_CONFIG.language,
+          }}
+          fetchDetails={true}
+          enablePoweredByContainer={false}
+          debounce={400}
+          minLength={2}
+          returnKeyType="search"
+          listViewDisplayed="auto"
+          renderDescription={(row) => row.description}
+          styles={{
+            container: styles.autocompleteContainer,
+            textInputContainer: styles.textInputContainer,
+            textInput: styles.textInput,
+            listView: styles.listView,
+            row: styles.autocompleteRow,
+            separator: styles.autocompleteSeparator,
+          }}
+          GooglePlacesDetailsQuery={{
+            fields: 'geometry,formatted_address,address_components',
+          }}
+        />
+      </View>
+
+      {/* Selected Address Display (only under search bar) */}
+      {deliveryAddress && (
+        <View style={styles.selectedAddressContainer}>
+          <View style={styles.selectedAddressCard}>
+            <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+            <View style={styles.selectedAddressInfo}>
+              <Text style={styles.selectedAddressLabel}>Delivery Address</Text>
+              <Text style={styles.selectedAddressText} numberOfLines={2}>
+                {deliveryAddress.description}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('RestaurantList')}
+            >
+              <Ionicons name="arrow-forward" size={20} color="#000" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
       <ScrollView 
         style={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContentContainer}
         nestedScrollEnabled={true}
+        keyboardShouldPersistTaps="handled"
       >
         <View style={styles.categoriesSection}>
           <View style={styles.categoriesHeader}>
@@ -363,69 +417,13 @@ const HomeScreen = () => {
           )}
         </View>
 
-        <View style={styles.searchContainer}>
-          <Text style={styles.searchLabel}>
-            {deliveryAddress ? 'Change address or search' : 'Search for a city or restaurant'}
-          </Text>
-
-          <GooglePlacesAutocomplete
-          placeholder="Enter city or restaurant name"
-          onPress={handlePlaceSelect}
-          query={{
-            key: GOOGLE_PLACES_CONFIG.apiKey,
-            language: GOOGLE_PLACES_CONFIG.language,
-          }}
-          fetchDetails={true}
-          enablePoweredByContainer={false}
-          debounce={400}
-          minLength={2}
-          returnKeyType="search"
-          listViewDisplayed="auto"
-          renderDescription={(row) => row.description}
-          flatListProps={{
-            nestedScrollEnabled: true,
-          }}
-          styles={{
-            container: styles.autocompleteContainer,
-            textInputContainer: styles.textInputContainer,
-            textInput: styles.textInput,
-            listView: styles.listView,
-            row: styles.autocompleteRow,
-            separator: styles.autocompleteSeparator,
-          }}
-          GooglePlacesDetailsQuery={{
-            fields: 'geometry,formatted_address,address_components',
-          }}
-        />
-      </View>
-
-      {/* Selected Address Display (only under search bar) */}
-      {deliveryAddress && (
-        <View style={styles.selectedAddressContainer}>
-          <View style={styles.selectedAddressCard}>
-            <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
-            <View style={styles.selectedAddressInfo}>
-              <Text style={styles.selectedAddressLabel}>Delivery Address</Text>
-              <Text style={styles.selectedAddressText} numberOfLines={2}>
-                {deliveryAddress.description}
-              </Text>
-            </View>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('RestaurantList')}
-            >
-              <Ionicons name="arrow-forward" size={20} color="#000" />
-            </TouchableOpacity>
+        {!deliveryAddress && (
+          <View style={styles.welcomeContainer}>
+            <Ionicons name="location-outline" size={64} color="#ccc" />
+            <Text style={styles.welcomeText}>Enter your delivery address to get started</Text>
+            <Text style={styles.welcomeSubtext}>We'll show you restaurants near you</Text>
           </View>
-        </View>
-      )}
-
-      {!deliveryAddress && (
-        <View style={styles.welcomeContainer}>
-          <Ionicons name="location-outline" size={64} color="#ccc" />
-          <Text style={styles.welcomeText}>Enter your delivery address to get started</Text>
-          <Text style={styles.welcomeSubtext}>We'll show you restaurants near you</Text>
-        </View>
-      )}
+        )}
       </ScrollView>
     </SafeAreaView>
   );

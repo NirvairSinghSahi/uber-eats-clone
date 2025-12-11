@@ -382,6 +382,9 @@ const HomeScreen = () => {
           returnKeyType="search"
           listViewDisplayed="auto"
           renderDescription={(row) => row.description}
+          flatListProps={{
+            nestedScrollEnabled: true,
+          }}
           styles={{
             container: styles.autocompleteContainer,
             textInputContainer: styles.textInputContainer,

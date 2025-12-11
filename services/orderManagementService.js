@@ -40,6 +40,11 @@ export const confirmOrder = async (orderId) => {
     const orderData = orderDoc.data();
     const currentStatus = orderData.status;
 
+    if (currentStatus === 'cancelled') {
+      console.log(`Order ${orderId} is cancelled, cannot confirm`);
+      return false;
+    }
+
     if (currentStatus !== 'placed') {
       console.log(`Order ${orderId} is already ${currentStatus}, cannot confirm`);
       return false;
@@ -82,6 +87,11 @@ export const startPreparing = async (orderId) => {
 
     const orderData = orderDoc.data();
     const currentStatus = orderData.status;
+
+    if (currentStatus === 'cancelled') {
+      console.log(`Order ${orderId} is cancelled, cannot start preparing`);
+      return false;
+    }
 
     if (currentStatus !== 'confirmed') {
       console.log(`Order ${orderId} is ${currentStatus}, must be confirmed first`);
@@ -126,6 +136,11 @@ export const assignDriver = async (orderId, driverId = null) => {
 
     const orderData = orderDoc.data();
     const currentStatus = orderData.status;
+
+    if (currentStatus === 'cancelled') {
+      console.log(`Order ${orderId} is cancelled, cannot assign driver`);
+      return false;
+    }
 
     if (currentStatus !== 'preparing') {
       console.log(`Order ${orderId} is ${currentStatus}, must be preparing first`);
@@ -299,6 +314,11 @@ export const markOrderReady = async (orderId) => {
     const orderData = orderDoc.data();
     const currentStatus = orderData.status;
 
+    if (currentStatus === 'cancelled') {
+      console.log(`Order ${orderId} is cancelled, cannot mark as ready`);
+      return false;
+    }
+
     if (currentStatus !== 'preparing') {
       console.log(`Order ${orderId} is ${currentStatus}, must be preparing first`);
       return false;
@@ -326,6 +346,69 @@ export const markOrderReady = async (orderId) => {
 };
 
 /**
+ * Cancel an order
+ * @param {string} orderId - Order ID
+ * @returns {Promise<{success: boolean, error?: string}>} Result object
+ */
+export const cancelOrder = async (orderId) => {
+  try {
+    const orderRef = doc(db, 'orders', orderId);
+    const orderDoc = await getDoc(orderRef);
+    
+    if (!orderDoc.exists()) {
+      return { success: false, error: 'Order not found' };
+    }
+
+    const orderData = orderDoc.data();
+    const currentStatus = orderData.status;
+
+    // Define non-cancellable statuses
+    const nonCancellableStatuses = [
+      'driver_assigned',
+      'driver_picked_up',
+      'on_the_way',
+      'ready',
+      'delivered',
+      'cancelled',
+    ];
+
+    if (nonCancellableStatuses.includes(currentStatus)) {
+      let errorMessage = 'This order cannot be cancelled.';
+      if (currentStatus === 'ready') {
+        errorMessage = 'This order is ready for pickup and cannot be cancelled.';
+      } else if (currentStatus === 'driver_assigned' || currentStatus === 'driver_picked_up' || currentStatus === 'on_the_way') {
+        errorMessage = 'This order is already out for delivery and cannot be cancelled.';
+      } else if (currentStatus === 'delivered') {
+        errorMessage = 'This order has already been delivered and cannot be cancelled.';
+      } else if (currentStatus === 'cancelled') {
+        errorMessage = 'This order has already been cancelled.';
+      }
+      return { success: false, error: errorMessage };
+    }
+
+    // Update order status to cancelled
+    await updateDoc(orderRef, {
+      status: 'cancelled',
+      cancelledAt: new Date().toISOString(),
+      statusHistory: [
+        ...(orderData.statusHistory || []),
+        {
+          status: 'cancelled',
+          timestamp: new Date().toISOString(),
+          message: 'Order has been cancelled',
+        },
+      ],
+    });
+
+    console.log(`Order ${orderId} has been cancelled`);
+    return { success: true };
+  } catch (error) {
+    console.error('Error cancelling order:', error);
+    return { success: false, error: error.message || 'Failed to cancel order' };
+  }
+};
+
+/**
  * Auto-progress order through all statuses (for testing/demo)
  * Uses real travel time from Google Distance Matrix API for delivery orders
  * @param {string} orderId - Order ID
@@ -342,6 +425,12 @@ export const autoProgressOrder = async (orderId) => {
     }
 
     const orderData = orderDoc.data();
+    
+    // Don't auto-progress cancelled orders
+    if (orderData.status === 'cancelled') {
+      return;
+    }
+    
     const isPickup = orderData.orderType === 'pickup';
 
     if (isPickup) {
@@ -484,6 +573,7 @@ export default {
   driverPickedUp,
   markOnTheWay,
   markAsDelivered,
+  cancelOrder,
   autoProgressOrder,
   getEstimatedTimeForNextStatus,
   getTimeEstimate,

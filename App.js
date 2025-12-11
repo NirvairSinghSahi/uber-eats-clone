@@ -9,9 +9,9 @@ import AppNavigator from './navigation/AppNavigator';
 
 // Suppress Firestore BloomFilter warning (harmless, known issue in Firestore v11.x)
 LogBox.ignoreLogs([
-  'BloomFilter error',
-  'BloomFilterError',
-  '@firebase/firestore: Firestore',
+  /BloomFilter/i,
+  /Firestore.*BloomFilter/i,
+  '@firebase/firestore',
 ]);
 
 // Initialize auth listener

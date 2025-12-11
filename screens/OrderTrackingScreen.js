@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -19,7 +20,8 @@ import { db } from '../firebase';
 import { 
   getTimeEstimate, 
   getEstimatedTimeForNextStatus,
-  autoProgressOrder 
+  autoProgressOrder,
+  cancelOrder 
 } from '../services/orderManagementService';
 
 const { width, height } = Dimensions.get('window');
@@ -74,6 +76,12 @@ const ORDER_STATUSES = {
     icon: 'checkmark-circle',
     color: '#4CAF50',
     message: 'Your order has been delivered',
+  },
+  cancelled: {
+    label: 'Cancelled',
+    icon: 'close-circle',
+    color: '#F44336',
+    message: 'Your order has been cancelled',
   },
 };
 
@@ -164,7 +172,7 @@ const OrderTrackingScreen = () => {
                   setOrder(orderData);
                   
                   // Auto-progress if needed
-                  if (orderData.status !== 'delivered' && orderData.status !== 'ready') {
+                  if (orderData.status !== 'delivered' && orderData.status !== 'ready' && orderData.status !== 'cancelled') {
                     autoProgressOrder(orderData.id).catch(console.error);
                   }
                 } else {
@@ -176,10 +184,10 @@ const OrderTrackingScreen = () => {
               }
             );
             
-            // Auto-progress if needed
-            if (latestOrder.status !== 'delivered' && latestOrder.status !== 'ready') {
-              autoProgressOrder(latestOrder.id).catch(console.error);
-            }
+          // Auto-progress if needed
+          if (latestOrder.status !== 'delivered' && latestOrder.status !== 'ready' && latestOrder.status !== 'cancelled') {
+            autoProgressOrder(latestOrder.id).catch(console.error);
+          }
           } else {
             setOrder(null);
             setLoading(false);
@@ -222,7 +230,7 @@ const OrderTrackingScreen = () => {
           
           // Auto-progress order through statuses (for demo)
           // In production, this would be handled by restaurant/driver apps
-          if (orderData.status !== 'delivered' && orderData.status !== 'ready') {
+          if (orderData.status !== 'delivered' && orderData.status !== 'ready' && orderData.status !== 'cancelled') {
             autoProgressOrder(orderData.id).catch(console.error);
           }
         } else {
@@ -245,7 +253,7 @@ const OrderTrackingScreen = () => {
 
   // Calculate time remaining for next status
   useEffect(() => {
-    if (!order || order.status === 'delivered' || order.status === 'ready') {
+    if (!order || order.status === 'delivered' || order.status === 'ready' || order.status === 'cancelled') {
       setTimeRemaining(null);
       return;
     }
@@ -354,6 +362,7 @@ const OrderTrackingScreen = () => {
 
   const getStatusProgress = () => {
     if (!order) return 0;
+    if (order.status === 'cancelled') return 0;
     const isPickup = order.orderType === 'pickup';
     const statusFlow = isPickup
       ? ['placed', 'confirmed', 'preparing', 'ready']
@@ -364,6 +373,25 @@ const OrderTrackingScreen = () => {
 
   const getStatusTimeline = (orderData) => {
     if (!orderData) return [];
+    
+    // If order is cancelled, show cancelled status
+    if (orderData.status === 'cancelled') {
+      const cancelledInfo = ORDER_STATUSES.cancelled;
+      const statusHistory = orderData.statusHistory || [];
+      const cancelledEntry = statusHistory.find((entry) => entry.status === 'cancelled');
+      
+      return [
+        {
+          status: 'cancelled',
+          label: cancelledInfo.label,
+          color: cancelledInfo.color,
+          completed: true,
+          timestamp: cancelledEntry?.timestamp || null,
+          message: cancelledEntry?.message || cancelledInfo.message,
+          estimatedTime: null,
+        },
+      ];
+    }
     
     const isPickup = orderData.orderType === 'pickup';
     const statusFlow = isPickup
@@ -451,6 +479,39 @@ const OrderTrackingScreen = () => {
     }
   };
 
+  const handleCancelOrder = () => {
+    if (!order) return;
+
+    Alert.alert(
+      'Cancel Order',
+      'Are you sure you want to cancel this order? This action cannot be undone.',
+      [
+        {
+          text: 'No',
+          style: 'cancel',
+        },
+        {
+          text: 'Yes, Cancel Order',
+          style: 'destructive',
+          onPress: async () => {
+            const result = await cancelOrder(order.id);
+            if (result.success) {
+              Alert.alert('Success', 'Your order has been cancelled.');
+            } else {
+              Alert.alert('Error', result.error || 'Failed to cancel order. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const canCancelOrder = () => {
+    if (!order) return false;
+    const cancellableStatuses = ['placed', 'confirmed', 'preparing'];
+    return cancellableStatuses.includes(order.status);
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
@@ -487,7 +548,7 @@ const OrderTrackingScreen = () => {
             <Text style={styles.statusMessage}>{statusInfo.message}</Text>
             
             {/* Time Estimate */}
-            {timeRemaining && order.status !== 'delivered' && order.status !== 'ready' && (
+            {timeRemaining && order.status !== 'delivered' && order.status !== 'ready' && order.status !== 'cancelled' && (
               <View style={styles.timeEstimateContainer}>
                 <Ionicons name="time-outline" size={20} color={statusInfo.color} />
                 <Text style={[styles.timeEstimate, { color: statusInfo.color }]}>
@@ -496,27 +557,40 @@ const OrderTrackingScreen = () => {
               </View>
             )}
             
-            {order.status !== 'delivered' && order.status !== 'ready' && (
+            {order.status !== 'delivered' && order.status !== 'ready' && order.status !== 'cancelled' && (
               <EstimatedTimeDisplay status={order.status} order={order} />
+            )}
+
+            {/* Cancel Order Button */}
+            {canCancelOrder() && (
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={handleCancelOrder}
+              >
+                <Ionicons name="close-circle-outline" size={20} color="#F44336" />
+                <Text style={styles.cancelButtonText}>Cancel Order</Text>
+              </TouchableOpacity>
             )}
           </View>
 
           {/* Progress Bar */}
-          <View style={styles.progressContainer}>
-            <View style={styles.progressBar}>
-              <View
-                style={[
-                  styles.progressFill,
-                  { width: `${progress}%`, backgroundColor: statusInfo.color },
-                ]}
-              />
+          {order.status !== 'cancelled' && (
+            <View style={styles.progressContainer}>
+              <View style={styles.progressBar}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    { width: `${progress}%`, backgroundColor: statusInfo.color },
+                  ]}
+                />
+              </View>
+              <Text style={styles.progressText}>{Math.round(progress)}% Complete</Text>
             </View>
-            <Text style={styles.progressText}>{Math.round(progress)}% Complete</Text>
-          </View>
+          )}
         </View>
 
         {/* Map View */}
-        {order.restaurantCoordinates && (
+        {order.restaurantCoordinates && order.status !== 'cancelled' && (
           <View style={styles.mapContainer}>
             <MapView
               ref={mapRef}
@@ -954,6 +1028,23 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  cancelButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#F44336',
+  },
+  cancelButtonText: {
+    color: '#F44336',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });
 
